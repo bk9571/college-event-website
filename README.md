@@ -159,7 +159,10 @@ Open the job in Jenkins and click **Build Now**. (No webhooks or automatic trigg
 7. Verify Docker Image (image exists via Docker CLI)
 8. Run Docker Container (starts a smoke-test container on port 8082 — see [Phase 5B](#phase-5b--docker-smoke-testing))
 9. Smoke Test (curl check against the running container)
-10. Archive Build Artifacts (`target/**`, `README.md`, `pom.xml`, with fingerprinting)
+10. Tag Docker Image (adds a `${BUILD_NUMBER}` tag — see [Phase 6B](#phase-6b--jenkins-kubernetes-deployment))
+11. Deploy to Kubernetes (`kubectl apply -f k8s/`, then rolls out the versioned tag)
+12. Verify Deployment (`kubectl get deployments/pods/services`)
+13. Archive Build Artifacts (`target/**`, `README.md`, `pom.xml`, with fingerprinting)
 
 ## Phase 5B – Docker Smoke Testing
 
@@ -234,6 +237,59 @@ kubectl rollout history deployment college-event-deployment
 ```
 kubectl delete -f k8s/
 ```
+
+## Phase 6B – Jenkins Kubernetes Deployment
+
+The Jenkins pipeline (`Jenkinsfile`) now deploys automatically after a successful build and smoke test — extending Phase 6A's manual `kubectl apply` into the CI pipeline itself. Existing stages are untouched; three stages were added between **Smoke Test** and **Archive Build Artifacts**.
+
+**Pipeline flow (full sequence):**
+
+```
+Clean Workspace
+  -> Checkout Source
+  -> Environment Verification
+  -> Maven Build
+  -> Verify Build Output
+  -> Docker Build
+  -> Verify Docker Image
+  -> Run Docker Container
+  -> Smoke Test
+  -> Tag Docker Image        (new)
+  -> Deploy to Kubernetes    (new)
+  -> Verify Deployment       (new)
+  -> Archive Build Artifacts
+```
+
+**Tag Docker Image:** `Docker Build` already produced `college-event-website:latest`. This stage runs `docker tag college-event-website:latest college-event-website:%BUILD_NUMBER%` to add a second, build-numbered tag pointing at the same image — no image is rebuilt twice.
+
+**Deploy to Kubernetes:** `k8s/deployment.yaml` intentionally keeps `college-event-website:latest` as its declared image (no changes were made to it) to avoid introducing manifest templating (Helm/Kustomize are explicitly out of scope for this project). Instead, the stage:
+
+1. `kubectl apply -f k8s/` — creates/updates the Deployment and Service from the unchanged manifests.
+2. `kubectl set image deployment/college-event-deployment college-event-container=college-event-website:%BUILD_NUMBER%` — points the *live* Deployment at this build's exact versioned tag, so the running workload is traceable to a specific Jenkins build number even though the YAML on disk still says `:latest`.
+3. `kubectl rollout status deployment/college-event-deployment` — blocks until the rollout finishes; the pipeline fails if the rollout does not succeed.
+
+**Rollout verification:** `kubectl rollout status` is the actual pass/fail gate — it only returns successfully once the new pods are ready and old ones are terminated, so a broken image or crash-looping pod fails the Jenkins build here rather than silently leaving a broken deployment.
+
+**Verify Deployment stage** prints current state into the Jenkins console:
+
+```
+kubectl get deployments
+kubectl get pods
+kubectl get services
+```
+
+**Useful kubectl commands (post-deployment inspection):**
+
+```
+kubectl describe deployment college-event-deployment
+kubectl describe service college-event-service
+kubectl logs -l app=college-event
+kubectl rollout history deployment/college-event-deployment
+```
+
+**Redeployment:** simply re-run the Jenkins job (**Build Now**). Each run tags the image with the new `BUILD_NUMBER`, re-applies the manifests, and rolls the Deployment forward to that new tag — no manual steps needed.
+
+**Note on cleanup:** unlike the disposable Phase 5B smoke-test container, the Kubernetes Deployment and Service are **not** automatically deleted by the pipeline — this stage represents an actual deployment, not throwaway CI infrastructure. To tear it down manually, use the commands from [Phase 6A](#phase-6a--kubernetes-deployment) (`kubectl delete -f k8s/`).
 
 ## Project Status
 

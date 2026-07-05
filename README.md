@@ -32,6 +32,7 @@ college-event-website/
 ├── assets/
 │   └── images/
 │       └── favicon.svg
+├── pom.xml
 └── README.md
 ```
 
@@ -51,6 +52,25 @@ No build tools or dependencies are required. Either:
    python -m http.server
    ```
    then visit `http://localhost:<port>`.
+
+## Maven Build
+
+This project remains a plain static website — Maven is used only as a packaging tool for the DevOps pipeline, not to run a Java application. There is no Java source code, no application server, and no framework involved.
+
+**How to build:**
+
+```
+mvn clean package
+```
+
+**Where packaged files are located:**
+
+`target/site` — a complete, runnable copy of the website (all HTML files, `css/`, `js/`, and `assets/`, including the favicon).
+
+Other useful commands:
+
+- `mvn validate` — validates the project is correct
+- `mvn clean` — removes the `target/` directory
 
 ## Project Status
 

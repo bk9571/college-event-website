@@ -36,6 +36,9 @@ college-event-website/
 ├── Dockerfile
 ├── .dockerignore
 ├── Jenkinsfile
+├── k8s/
+│   ├── deployment.yaml
+│   └── service.yaml
 └── README.md
 ```
 
@@ -169,6 +172,68 @@ After the Docker image is built and verified, the pipeline proves the image actu
 3. **Cleanup Container** — `docker stop college-event-ci` and `docker rm college-event-ci` always run, regardless of whether the smoke test passed or failed, via the pipeline's `post { always {} }` block. This guarantees no leftover container survives a build, successful or not.
 
 This stays a pure CI check — the container is disposable and torn down every run; nothing is deployed or left running.
+
+## Phase 6A – Kubernetes Deployment
+
+The existing Docker image (`college-event-website:latest`) can be deployed manually to a local Kubernetes cluster using the manifests in `k8s/`. This is a manual workflow — Jenkins is not yet integrated with Kubernetes (that's Phase 6B).
+
+**Prerequisites:**
+
+- Docker Desktop with Kubernetes enabled (tested against a single-node `docker-desktop` cluster).
+- `kubectl` configured against that cluster (`kubectl get nodes` should show `docker-desktop` as `Ready`).
+- The `college-event-website:latest` image already built locally (`docker build -t college-event-website:latest .`), since the Deployment uses `imagePullPolicy: IfNotPresent` and does not pull from a registry.
+
+**Directory structure:**
+
+```
+k8s/
+├── deployment.yaml   # Deployment: college-event-deployment (2 replicas, resource limits, health checks)
+└── service.yaml      # Service: college-event-service (NodePort, auto-assigned port)
+```
+
+**Deploy:**
+
+```
+kubectl apply -f k8s/
+```
+
+**Verify:**
+
+```
+kubectl get deployments
+kubectl get pods
+kubectl get services
+kubectl describe deployment college-event-deployment
+kubectl describe service college-event-service
+```
+
+The Service is `NodePort` type with no hardcoded port — Kubernetes assigns one automatically. Find it with:
+
+```
+kubectl get service college-event-service -o jsonpath="{.spec.ports[0].nodePort}"
+```
+
+then open `http://localhost:<nodePort>` in a browser.
+
+**Scaling:**
+
+```
+kubectl scale deployment college-event-deployment --replicas=3
+kubectl get pods
+```
+
+**Rollout status:**
+
+```
+kubectl rollout status deployment college-event-deployment
+kubectl rollout history deployment college-event-deployment
+```
+
+**Cleanup:**
+
+```
+kubectl delete -f k8s/
+```
 
 ## Project Status
 

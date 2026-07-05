@@ -23,7 +23,76 @@
   </header>
 
   <main>
-    <!-- Registration content coming soon -->
+    <section class="page-intro">
+      <h1>Registration</h1>
+      <p>Secure your spot at TechnoVista 2026. Fill out the form below to register for the symposium.</p>
+    </section>
+
+    <section class="reg-info">
+      <div class="card">
+        <span class="date-label">Registration Deadline</span>
+        <span class="date-value">September 10, 2026</span>
+      </div>
+      <div class="card">
+        <span class="date-label">Entry Fee</span>
+        <span class="date-value">&#8377;299 per participant</span>
+      </div>
+      <div class="card">
+        <span class="date-label">Team Events</span>
+        <span class="date-value">Up to 4 members</span>
+      </div>
+    </section>
+
+    <section class="reg-form-section">
+      <h2>Registration Form</h2>
+      <form id="registrationForm" class="reg-form" novalidate>
+        <div class="form-group">
+          <label for="fullName">Full Name *</label>
+          <input type="text" id="fullName" name="fullName" required>
+          <span class="error-msg" data-error-for="fullName"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address *</label>
+          <input type="email" id="email" name="email" required>
+          <span class="error-msg" data-error-for="email"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Phone Number *</label>
+          <input type="tel" id="phone" name="phone" required>
+          <span class="error-msg" data-error-for="phone"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="college">College / Institution *</label>
+          <input type="text" id="college" name="college" required>
+          <span class="error-msg" data-error-for="college"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="track">Event / Track *</label>
+          <select id="track" name="track" required>
+            <option value="">Select a track</option>
+            <option value="codestorm">CodeStorm Hackathon</option>
+            <option value="robo-race">Robo Race</option>
+            <option value="paper-presentation">Technical Paper Presentation</option>
+            <option value="treasure-hunt">Treasure Hunt</option>
+            <option value="gaming">Gaming Tournament</option>
+            <option value="general">General Attendee</option>
+          </select>
+          <span class="error-msg" data-error-for="track"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="teamSize">Team Size</label>
+          <input type="number" id="teamSize" name="teamSize" min="1" max="4" value="1">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit Registration</button>
+        <p id="formSuccessMsg" class="form-success-msg" hidden>✅ Registration submitted! We'll contact you via email.</p>
+      </form>
+    </section>
   </main>
 
   <footer class="site-footer">

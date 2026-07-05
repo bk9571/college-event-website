@@ -334,6 +334,76 @@ section h2 {
   background: var(--bg-panel-alt);
 }
 
+/* ---- Registration info cards ---- */
+.reg-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.reg-info .card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* ---- Form ---- */
+.reg-form {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 2rem;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.form-group input,
+.form-group select {
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.9rem;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 8px rgba(0, 246, 255, 0.4);
+}
+
+.form-group input.input-error,
+.form-group select.input-error {
+  border-color: var(--neon-magenta);
+}
+
+.error-msg {
+  color: var(--neon-magenta);
+  font-size: 0.8rem;
+  min-height: 1em;
+}
+
+.form-success-msg {
+  color: var(--neon-cyan);
+  font-weight: 600;
+}
+
 /* ---- Footer ---- */
 .site-footer {
   border-top: 1px solid var(--border-color);

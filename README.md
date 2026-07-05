@@ -35,6 +35,7 @@ college-event-website/
 ├── pom.xml
 ├── Dockerfile
 ├── .dockerignore
+├── Jenkinsfile
 └── README.md
 ```
 
@@ -115,6 +116,45 @@ docker rm college-event-site
 ```
 docker rmi college-event-website:latest
 ```
+
+## Jenkins CI
+
+A `Jenkinsfile` at the repo root defines a CI-only pipeline: it checks out the code, verifies the toolchain, runs the Maven build, builds the Docker image, verifies both build outputs, and archives artifacts. It does not run containers or deploy anywhere.
+
+**Prerequisites:**
+
+- Jenkins LTS with the following plugins installed:
+  - Git plugin (repository checkout)
+  - Pipeline plugin (declarative pipeline support)
+  - Workspace Cleanup plugin (`cleanWs()`)
+- A Jenkins agent (or the built-in node) with `git`, a JDK, Maven, and Docker Desktop available on its `PATH`. This project targets a Windows agent (the pipeline uses `bat`, not `sh`).
+
+**Creating the pipeline job:**
+
+1. In Jenkins, choose **New Item → Pipeline**, name it (e.g. `college-event-website-ci`).
+2. Under **Pipeline**, set **Definition** to **Pipeline script from SCM**.
+3. Set **SCM** to **Git**.
+4. **Repository URL:** `https://github.com/bk9571/college-event-website.git`
+5. **Branch Specifier:** `*/main`
+6. **Script Path:** `Jenkinsfile`
+7. Save the job.
+
+Since the repository is public, no credentials are required for checkout.
+
+**Triggering a build manually:**
+
+Open the job in Jenkins and click **Build Now**. (No webhooks or automatic triggers are configured in this phase.)
+
+**Expected pipeline stages:**
+
+1. Clean Workspace
+2. Checkout Source
+3. Environment Verification (`git`, `java`, `mvn`, `docker` versions)
+4. Maven Build (`mvn clean package`)
+5. Verify Build Output (`target/site` exists)
+6. Docker Build (`docker build -t college-event-website:latest .`)
+7. Verify Docker Image (image exists via Docker CLI)
+8. Archive Build Artifacts (`target/**`, `README.md`, `pom.xml`, with fingerprinting)
 
 ## Project Status
 

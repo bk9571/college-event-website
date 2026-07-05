@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.college.event</groupId>
+  <artifactId>college-event-website</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+
+  <name>TechnoVista College Event Website</name>
+  <description>
+    Static HTML/CSS/JS website for the TechnoVista college technical symposium.
+    Maven is used purely as a build/packaging tool - there is no Java source
+    and no application server involved. "mvn clean package" assembles a
+    runnable copy of the site under target/site.
+  </description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+  </properties>
+
+  <build>
+    <finalName>college-event-website</finalName>
+    <plugins>
+      <!-- Ensures `mvn clean` removes target/ (default behavior, pinned for reproducibility) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>3.3.2</version>
+      </plugin>
+
+      <!-- Copies the static site (HTML, css/, js/, assets/) into target/site during package -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.3.1</version>
+        <executions>
+          <execution>
+            <id>copy-static-site</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/site</outputDirectory>
+              <encoding>UTF-8</encoding>
+              <resources>
+                <resource>
+                  <directory>${project.basedir}</directory>
+                  <includes>
+                    <include>*.html</include>
+                  </includes>
+                </resource>
+                <resource>
+                  <directory>${project.basedir}/css</directory>
+                  <targetPath>css</targetPath>
+                </resource>
+                <resource>
+                  <directory>${project.basedir}/js</directory>
+                  <targetPath>js</targetPath>
+                </resource>
+                <resource>
+                  <directory>${project.basedir}/assets</directory>
+                  <targetPath>assets</targetPath>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

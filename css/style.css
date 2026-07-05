@@ -258,6 +258,82 @@ section h2 {
   font-size: 1.1rem;
 }
 
+/* ---- Page intro (shared across inner pages) ---- */
+.page-intro h1 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  margin-bottom: 0.5rem;
+}
+
+.page-intro p {
+  color: var(--text-muted);
+  max-width: 650px;
+}
+
+/* ---- Schedule table ---- */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+}
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-panel);
+}
+
+.schedule-table th,
+.schedule-table td {
+  padding: 0.9rem 1.1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.schedule-table th {
+  font-family: var(--font-heading);
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  background: var(--bg-panel-alt);
+}
+
+.schedule-table tbody tr:hover {
+  background: var(--bg-panel-alt);
+}
+
+.schedule-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.tag-technical {
+  color: var(--neon-cyan);
+  border-color: var(--neon-cyan);
+  background: rgba(0, 246, 255, 0.08);
+}
+
+.tag-nontech {
+  color: var(--neon-magenta);
+  border-color: var(--neon-magenta);
+  background: rgba(255, 46, 203, 0.08);
+}
+
+.tag-general {
+  color: var(--text-muted);
+  border-color: var(--border-color);
+  background: var(--bg-panel-alt);
+}
+
 /* ---- Footer ---- */
 .site-footer {
   border-top: 1px solid var(--border-color);

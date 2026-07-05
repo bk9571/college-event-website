@@ -1,0 +1,9 @@
+.git
+.github
+.gitignore
+.vscode
+.idea
+README.md
+docs
+monitoring
+k8s

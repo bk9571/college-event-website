@@ -33,6 +33,8 @@ college-event-website/
 │   └── images/
 │       └── favicon.svg
 ├── pom.xml
+├── Dockerfile
+├── .dockerignore
 └── README.md
 ```
 
@@ -71,6 +73,48 @@ Other useful commands:
 
 - `mvn validate` — validates the project is correct
 - `mvn clean` — removes the `target/` directory
+
+## Docker
+
+The packaged site (`target/site`, produced by `mvn clean package`) is served using Nginx inside a minimal Docker image. Run `mvn clean package` before building the image so `target/site` exists.
+
+**Build:**
+
+```
+docker build -t college-event-website:latest .
+```
+
+Optional production tag:
+
+```
+docker build -t college-event-website:v1.0 .
+```
+
+**Run:**
+
+```
+docker run -d -p 8081:80 --name college-event-site college-event-website:latest
+```
+
+Open [http://localhost:8081](http://localhost:8081).
+
+**Stop:**
+
+```
+docker stop college-event-site
+```
+
+**Remove container:**
+
+```
+docker rm college-event-site
+```
+
+**Remove image:**
+
+```
+docker rmi college-event-website:latest
+```
 
 ## Project Status
 

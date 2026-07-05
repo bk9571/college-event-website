@@ -25,6 +25,28 @@
   box-sizing: border-box;
 }
 
+:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  top: -60px;
+  left: 0.5rem;
+  background: var(--neon-cyan);
+  color: var(--bg-dark);
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius);
+  font-weight: bold;
+  z-index: 200;
+  transition: top var(--transition);
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
 html {
   scroll-behavior: smooth;
 }

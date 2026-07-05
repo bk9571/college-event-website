@@ -1,11 +1,15 @@
 // Jenkins CI pipeline for the TechnoVista college-event-website project.
 //
-// Scope: CI build only.
+// Scope: CI build + Docker smoke test (Phase 5B).
 //   - Clones the repo, verifies the toolchain, runs the Maven build,
 //     builds a Docker image, verifies both build outputs, and archives
 //     the build artifacts.
-//   - Does NOT run/stop/remove containers, deploy anywhere, or touch
-//     Kubernetes/monitoring. Those belong to later phases.
+//   - Also runs the built image in a throwaway container on port 8082,
+//     curls it to confirm the site is actually served, then always
+//     tears the container down (post { always {} }), even if the
+//     smoke test fails.
+//   - Does NOT deploy anywhere, push images, or touch Kubernetes/
+//     monitoring. Those belong to later phases.
 //
 // Agent: Windows Jenkins agent (uses `bat`, not `sh`).
 
@@ -80,6 +84,46 @@ pipeline {
             }
         }
 
+        stage('Run Docker Container') {
+            steps {
+                // Remove any leftover container from a previous run; ignore errors if it doesn't exist.
+                bat '''
+                    docker stop college-event-ci
+                    docker rm college-event-ci
+                    exit /b 0
+                '''
+                bat '''
+                    docker run -d ^
+                        --name college-event-ci ^
+                        -p 8082:80 ^
+                        college-event-website:latest
+                '''
+                // Give nginx a moment to start before the smoke test hits it.
+                // (Using ping instead of timeout - timeout fails on non-interactive Jenkins agents.)
+                bat 'ping -n 6 127.0.0.1 >nul'
+            }
+        }
+
+        stage('Smoke Test') {
+            steps {
+                bat '''
+                    curl -f -s -o smoke_test_response.html http://localhost:8082/
+                    if errorlevel 1 (
+                        echo ERROR: Smoke test failed - website did not respond on http://localhost:8082/
+                        exit /b 1
+                    )
+
+                    findstr /C:"TechnoVista" smoke_test_response.html >nul
+                    if errorlevel 1 (
+                        echo ERROR: Smoke test failed - response did not contain expected content "TechnoVista"
+                        exit /b 1
+                    )
+
+                    echo Smoke test passed: website responded on port 8082 and contains expected content.
+                '''
+            }
+        }
+
         stage('Archive Build Artifacts') {
             steps {
                 archiveArtifacts artifacts: 'target/**, README.md, pom.xml', fingerprint: true
@@ -89,6 +133,14 @@ pipeline {
 
     post {
         always {
+            // Cleanup Container: always tear down the smoke-test container, even if
+            // the smoke test itself failed. post { always {} } runs regardless of
+            // stage outcome, guaranteeing this executes.
+            bat '''
+                docker stop college-event-ci
+                docker rm college-event-ci
+                exit /b 0
+            '''
             echo 'Build completed.'
         }
         success {

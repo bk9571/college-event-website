@@ -154,7 +154,21 @@ Open the job in Jenkins and click **Build Now**. (No webhooks or automatic trigg
 5. Verify Build Output (`target/site` exists)
 6. Docker Build (`docker build -t college-event-website:latest .`)
 7. Verify Docker Image (image exists via Docker CLI)
-8. Archive Build Artifacts (`target/**`, `README.md`, `pom.xml`, with fingerprinting)
+8. Run Docker Container (starts a smoke-test container on port 8082 — see [Phase 5B](#phase-5b--docker-smoke-testing))
+9. Smoke Test (curl check against the running container)
+10. Archive Build Artifacts (`target/**`, `README.md`, `pom.xml`, with fingerprinting)
+
+## Phase 5B – Docker Smoke Testing
+
+After the Docker image is built and verified, the pipeline proves the image actually serves the website — not just that it exists — by running it and hitting it with a real HTTP request.
+
+**What it does:**
+
+1. **Run Docker Container** — removes any leftover `college-event-ci` container from a previous run (ignoring errors if none exists), then starts a fresh container from `college-event-website:latest` named `college-event-ci`, publishing it on **port 8082**. The pipeline waits a few seconds for nginx to finish starting before testing it.
+2. **Smoke Test** — uses `curl` to request `http://localhost:8082/`. The build fails immediately if the HTTP request fails. The response body is then checked for the string `TechnoVista` (present in the page `<title>`); the build fails if that content is missing. A success message is printed when both checks pass.
+3. **Cleanup Container** — `docker stop college-event-ci` and `docker rm college-event-ci` always run, regardless of whether the smoke test passed or failed, via the pipeline's `post { always {} }` block. This guarantees no leftover container survives a build, successful or not.
+
+This stays a pure CI check — the container is disposable and torn down every run; nothing is deployed or left running.
 
 ## Project Status
 

@@ -129,35 +129,43 @@ pipeline {
         }
 
         stage('Tag Docker Image') {
-            steps {
-                // Docker Build already produced college-event-website:latest above,
-                // so this just adds a second, build-numbered tag pointing at the
-                // same image rather than rebuilding it a second time.
-                bat 'docker tag college-event-website:latest college-event-website:%BUILD_NUMBER%'
-            }
-        }
+    steps {
+        bat '''
+        docker tag college-event-website:latest college-event-website:%BUILD_NUMBER%
+        '''
+    }
+}
 
-        stage('Deploy to Kubernetes') {
-            steps {
-                // k8s/deployment.yaml keeps :latest as its declared image (see README,
-                // Phase 6B) to stay Helm/Kustomize-free. kubectl set image then points
-                // the live Deployment at this build's exact versioned tag, so the
-                // running workload can be traced back to a specific Jenkins build.
-                bat 'kubectl apply -f k8s/'
-                bat 'kubectl set image deployment/college-event-deployment college-event-container=college-event-website:%BUILD_NUMBER%'
-                // Fails the pipeline if the rollout does not complete successfully.
-                bat 'kubectl rollout status deployment/college-event-deployment'
-            }
-        }
+stage('Verify Kubernetes Context') {
+    steps {
+        bat '''
+        whoami
+        kubectl config current-context
+        kubectl cluster-info
+        '''
+    }
+}
 
-        stage('Verify Deployment') {
-            steps {
-                // Prints current deployment/pod/service status into the Jenkins console.
-                bat 'kubectl get deployments'
-                bat 'kubectl get pods'
-                bat 'kubectl get services'
-            }
-        }
+stage('Deploy to Kubernetes') {
+    steps {
+        bat '''
+        kubectl apply -f k8s/
+        kubectl set image deployment/college-event-deployment college-event-container=college-event-website:%BUILD_NUMBER%
+        kubectl rollout status deployment/college-event-deployment
+        '''
+    }
+}
+
+stage('Verify Deployment') {
+    steps {
+        bat '''
+        kubectl get deployments
+        kubectl get pods
+        kubectl get services
+        '''
+    }
+}
+
 
         stage('Archive Build Artifacts') {
             steps {

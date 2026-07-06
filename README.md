@@ -39,6 +39,12 @@ college-event-website/
 ├── k8s/
 │   ├── deployment.yaml
 │   └── service.yaml
+├── monitoring/
+│   ├── docker-compose.yml
+│   ├── README.md
+│   ├── nagios/
+│   ├── graphite/
+│   └── grafana/
 └── README.md
 ```
 
@@ -290,6 +296,38 @@ kubectl rollout history deployment/college-event-deployment
 **Redeployment:** simply re-run the Jenkins job (**Build Now**). Each run tags the image with the new `BUILD_NUMBER`, re-applies the manifests, and rolls the Deployment forward to that new tag — no manual steps needed.
 
 **Note on cleanup:** unlike the disposable Phase 5B smoke-test container, the Kubernetes Deployment and Service are **not** automatically deleted by the pipeline — this stage represents an actual deployment, not throwaway CI infrastructure. To tear it down manually, use the commands from [Phase 6A](#phase-6a--kubernetes-deployment) (`kubectl delete -f k8s/`).
+
+## Phase 7A – Monitoring Stack
+
+A standalone Docker Compose stack in `monitoring/` now provides the foundation for project monitoring, orchestrating three containers on a dedicated `monitoring-network`:
+
+- **Nagios** — host/service availability monitoring (`http://localhost:8085`)
+- **Graphite** — time-series metrics storage and rendering backend (`http://localhost:8081`)
+- **Grafana** — dashboards and visualization (`http://localhost:3000`)
+
+Each service's configuration is bind-mounted from a subdirectory (`monitoring/nagios/`, `monitoring/graphite/`, `monitoring/grafana/`) so it persists across container recreation. This phase only stands up the containers — Nagios checks, Graphite metric pipelines, and Grafana dashboards are configured in later phases. See [`monitoring/README.md`](monitoring/README.md) for full usage instructions.
+
+## Phase 7B – Nagios Monitoring
+
+Nagios (started in Phase 7A) now actively monitors four parts of the environment, all reached through Docker Desktop's host gateway (`host.docker.internal`) and modeled as services on one host object, `devops-host`:
+
+- **Jenkins HTTP** — `check_http` against `http://host.docker.internal:8080/login`
+- **TechnoVista Website (Kubernetes)** — `check_http` against the website's NodePort, **discovered dynamically** from `kubectl get svc college-event-service` (never hardcoded) by `monitoring/nagios/discover-nodeport.sh`
+- **Kubernetes API** — `check_http` against `https://host.docker.internal:6443/healthz` (Docker Desktop's self-signed cert; documented in `monitoring/nagios/README.md` why no certificate validation is silently disabled)
+- **Docker Engine (proxy check)** — a `check_tcp` proxy check against a Docker-published port, since the Nagios container has no direct access to the Docker daemon (documented limitation)
+
+**Reload process:** configuration lives entirely in the bind-mounted `monitoring/nagios/` folder (`conf.d/hosts.cfg`, `conf.d/services.cfg`, and the generated `conf.d/technovista-website.cfg`), so it survives `docker compose down && docker compose up -d`. After editing config, validate and reload with:
+
+```
+docker exec nagios /usr/local/bin/nagios -v /opt/nagios/etc/nagios.cfg
+docker exec nagios sv reload nagios
+```
+
+`discover-nodeport.sh` runs both of these automatically after regenerating the website's NodePort check.
+
+**Validation:** all four checks were confirmed live and returning `OK` (`HTTP OK: 200 OK` for Jenkins, Kubernetes API, and the website; `TCP OK` on the Docker Engine proxy port) via the Nagios Web UI status page (`http://localhost:8085`, default login `nagiosadmin`/`nagios`).
+
+**Troubleshooting:** see [`monitoring/nagios/README.md`](monitoring/nagios/README.md) — covers the "empty config directory" seeding requirement, multi-line `notes` directive limits, illegal characters in service names, and forcing an immediate check for services stuck in "PENDING".
 
 ## Project Status
 

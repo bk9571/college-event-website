@@ -1,0 +1,44 @@
+
+
+networks:
+  monitoring-network:
+    name: monitoring-network
+    driver: bridge
+
+services:
+  nagios:
+    image: jasonrivers/nagios:latest
+    container_name: nagios
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    volumes:
+      - ./nagios:/opt/nagios/etc
+    networks:
+      - monitoring-network
+
+  graphite:
+    image: graphiteapp/graphite-statsd:latest
+    container_name: graphite
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+      - "2003-2004:2003-2004"
+      - "2023-2024:2023-2024"
+      - "8125:8125/udp"
+      - "8126:8126"
+    volumes:
+      - ./graphite:/opt/graphite/conf
+    networks:
+      - monitoring-network
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana:/var/lib/grafana
+    networks:
+      - monitoring-network

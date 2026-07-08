@@ -1,1 +1,10 @@
 target/
+
+# Grafana runtime state (now a Docker-managed named volume, see
+# monitoring/docker-compose.yml) - never repo-managed config.
+monitoring/grafana/grafana.db
+monitoring/grafana/plugins/
+monitoring/grafana/png/
+monitoring/grafana/pdf/
+monitoring/grafana/csv/
+monitoring/grafana/unified-search/

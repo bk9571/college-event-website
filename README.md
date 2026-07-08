@@ -343,6 +343,23 @@ curl -s "http://localhost:8081/render?target=devops.jenkins.available&format=jso
 ```
 A response with real (non-null) datapoints at the expected timestamps confirms the full pipeline — generation, transmission, storage, and query — is working, not just that the Graphite container is running. Full details, the complete metric list, and troubleshooting (including a required one-time Graphite config restore — this image does not auto-seed its bind-mounted config directory the way the Nagios image does) are in [`monitoring/graphite/README.md`](monitoring/graphite/README.md).
 
+## Phase 7D – Grafana Dashboard
+
+Grafana (started in Phase 7A) now visualizes the metrics Phase 7C already publishes — no new metrics were created, and no dashboard was built by hand through the UI.
+
+**Datasource provisioning:** `monitoring/grafana/provisioning/datasources/graphite.yml` defines a `Graphite` datasource (`type: graphite`, `url: http://graphite`, reached over the shared `monitoring-network`) that Grafana loads automatically on startup. Since Grafana's default provisioning path (`/etc/grafana/provisioning`) isn't part of the existing bind mount, `monitoring/docker-compose.yml`'s `grafana` service now sets `GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning` — the smallest change that lets repo-tracked provisioning files (already inside the bind-mounted `./grafana` directory) survive `docker compose down && docker compose up -d` without any manual re-setup.
+
+**Dashboard provisioning:** `monitoring/grafana/provisioning/dashboards/dashboard.yml` (provider config) plus `technovista-dashboard.json` (the dashboard itself, committed to the repository, not only inside Grafana's internal database) together provision the **TechnoVista DevOps Monitoring** dashboard automatically.
+
+**Metrics visualized:** 3 Stat panels (Jenkins/Website/Kubernetes API availability, from `devops.*.available`) and 3 Time series panels (the corresponding `devops.*.response_time_ms`) — six panels total, one per existing metric pair.
+
+**How to verify:**
+```
+curl -u <user>:<pass> http://localhost:3000/api/datasources/uid/graphite/health
+curl -u <user>:<pass> http://localhost:3000/api/dashboards/uid/technovista-devops
+```
+The first confirms Grafana can actually reach Graphite; the second's `"provisionedExternalId":"technovista-dashboard.json"` confirms the dashboard was loaded from the repo file, not created manually. Full details in [`monitoring/grafana/README.md`](monitoring/grafana/README.md).
+
 ## Project Status
 
 This is Phase 1 of a larger DevOps pipeline assignment. Later phases will add Docker, Kubernetes, CI/CD (Jenkins), and monitoring (Nagios/Graphite/Grafana) on top of this static site.

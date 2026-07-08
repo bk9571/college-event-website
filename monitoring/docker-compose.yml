@@ -5,6 +5,9 @@ networks:
     name: monitoring-network
     driver: bridge
 
+volumes:
+  grafana-data:
+
 services:
   nagios:
     image: jasonrivers/nagios:latest
@@ -38,7 +41,22 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    environment:
+      # Grafana's default provisioning path (/etc/grafana/provisioning) is not
+      # part of the data volume below, so it's redirected here, under
+      # /var/lib/grafana, where the repo-tracked provisioning bind mount
+      # (see volumes below) is layered on top of the named data volume.
+      - GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning
     volumes:
-      - ./grafana:/var/lib/grafana
+      # Runtime state (grafana.db, installed plugins, rendered png/pdf/csv
+      # exports, unified-search index) is Grafana-managed and regenerated on
+      # startup - it does not belong in the repo (it was previously bind-mounted
+      # to ./grafana, which put deeply-nested plugin files in the Git working
+      # tree and caused Windows path-length failures during checkout). It now
+      # lives in a Docker-managed named volume instead.
+      - grafana-data:/var/lib/grafana
+      # Provisioning config (datasources, dashboard JSON) is repo-managed and
+      # mounted read-only on top of the named volume above.
+      - ./grafana/provisioning:/var/lib/grafana/provisioning:ro
     networks:
       - monitoring-network

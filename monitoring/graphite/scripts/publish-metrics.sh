@@ -8,8 +8,10 @@
 # loop for periodic publishing - see run-loop.sh in this same directory.
 #
 # No third-party exporter, agent, or monitoring framework is used: this is
-# plain curl + bash's built-in /dev/tcp, sent straight to Carbon's line
-# receiver, exactly like discover-nodeport.sh talks to kubectl and Nagios's
+# plain curl plus a small cross-platform TCP send (netcat if available,
+# otherwise a .NET socket via powershell.exe on Windows, otherwise bash's
+# /dev/tcp on native Linux), sent straight to Carbon's line receiver,
+# exactly like discover-nodeport.sh talks to kubectl and Nagios's
 # check_http/check_tcp talk to their targets.
 
 set -u
@@ -19,12 +21,30 @@ GRAPHITE_PORT="${GRAPHITE_PORT:-2003}"
 
 send_metric() {
     # $1 = metric path, $2 = value, $3 = unix timestamp
-    exec 3<>"/dev/tcp/${GRAPHITE_HOST}/${GRAPHITE_PORT}" || {
-        echo "ERROR: could not connect to Carbon at ${GRAPHITE_HOST}:${GRAPHITE_PORT}" >&2
-        return 1
-    }
-    printf '%s %s %s\n' "$1" "$2" "$3" >&3
-    exec 3<&- 3>&-
+    line="$1 $2 $3"
+
+    if command -v nc >/dev/null 2>&1; then
+        printf '%s\n' "$line" | nc -w 2 "$GRAPHITE_HOST" "$GRAPHITE_PORT" && return 0
+    elif command -v powershell.exe >/dev/null 2>&1; then
+        powershell.exe -NoProfile -NonInteractive -Command "
+            \$ErrorActionPreference = 'Stop'
+            \$client = New-Object System.Net.Sockets.TcpClient('${GRAPHITE_HOST}', ${GRAPHITE_PORT})
+            \$stream = \$client.GetStream()
+            \$bytes = [System.Text.Encoding]::ASCII.GetBytes(\"${line}\`n\")
+            \$stream.Write(\$bytes, 0, \$bytes.Length)
+            \$stream.Close()
+            \$client.Close()
+        " >/dev/null 2>&1 && return 0
+    else
+        exec 3<>"/dev/tcp/${GRAPHITE_HOST}/${GRAPHITE_PORT}" 2>/dev/null && {
+            printf '%s\n' "$line" >&3
+            exec 3<&- 3>&-
+            return 0
+        }
+    fi
+
+    echo "ERROR: could not connect to Carbon at ${GRAPHITE_HOST}:${GRAPHITE_PORT}" >&2
+    return 1
 }
 
 check_and_publish() {

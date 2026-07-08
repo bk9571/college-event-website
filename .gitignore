@@ -8,3 +8,8 @@ monitoring/grafana/png/
 monitoring/grafana/pdf/
 monitoring/grafana/csv/
 monitoring/grafana/unified-search/
+
+# Graphite runtime state (process log and PID file from run-loop.sh) -
+# regenerated on every run, never repo-managed config.
+monitoring/graphite/scripts/run-loop.log
+monitoring/graphite/scripts/run-loop.pid
